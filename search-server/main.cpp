@@ -24,7 +24,6 @@ int ReadLineWithNumber() {
     ReadLine();
     return result;
 }
-//--------------------------------------------------------
 
 vector<string> SplitIntoWords(const string& text) {
     vector<string> words;
@@ -46,14 +45,11 @@ vector<string> SplitIntoWords(const string& text) {
     return words;
 }
 
-//-----------------------------------------------
 
 struct Document {
     int id;
     double relevance;
 };
-
-//-----------------------------------------------
 
 
 class SearchServer {
@@ -63,16 +59,12 @@ class SearchServer {
     const vector<string> words = SplitIntoWordsNoStop(document);
     ++document_count_;
     double tf_single = 1.0 / words.size();
-    for (const string& word : words) {
-        if (word_to_document_freqs_.count(word) == 0)
-            {
-                word_to_document_freqs_[word].insert({document_id,tf_single});
-            } else {
-                word_to_document_freqs_[word][document_id] += tf_single;
-            }
-    }
+    for (const string& word : words)
+        {
+            word_to_document_freqs_[word][document_id] += tf_single;
+        }
 }
-//----------------------------------------------------------------------
+
 set<string> SetStopWords(const string& text) {
         set<string> stop_words;
         for (const string& word : SplitIntoWords(text)) {
@@ -80,7 +72,7 @@ set<string> SetStopWords(const string& text) {
         }
         return stop_words_;
         }
-//----------------------------------------------------------------------
+
 vector<Document>FindTopDocuments(const string& raw_query) const {
             const Query query_words = ParseQuery(raw_query);
             auto matched_documents = FindAllDocuments(query_words);
@@ -91,43 +83,47 @@ vector<Document>FindTopDocuments(const string& raw_query) const {
             }
             return matched_documents;
         }
-//----------------------------------------------------------------------
+
     private:
 
-    struct Query {
+    struct Query
+    {
         set<string> minus_words_;
         set<string> plus_words_;
-        };
+    };
 
     map<string, map<int, double>> word_to_document_freqs_;
     set <string>stop_words_;
     int document_count_ = 0;
-//------------------------------------------------------------------
+
 Query SplitOnPlusMinus (const set<string>& query_words) const {
-    Query temp;
-    int iter = 0;
-    for(const string& word : query_words) {
-    if(word[iter] == '-') {
-    if (stop_words_.count(word.substr(1)) == 0) {temp.minus_words_.insert(word.substr(1));}
-    } else if (stop_words_.count(word) == 0) {temp.plus_words_.insert(word);}
-            else {++iter; continue;}
-            ++iter;
+    Query q;
+    int first_symbol = 0;
+    for(const string& word : query_words)
+    {
+        if(word[first_symbol] == '-')
+        {
+            q.minus_words_.insert(word.substr(1));
+        } else
+            {
+            q.plus_words_.insert(word);
+            }
     }
-    return temp;
+    return q;
 }
-//------------------------------------------------------------------
+
 
 Query ParseQuery(const string& text) const {
-    Query temp;
     set<string> query_words;
-    for (const string& word : SplitIntoWordsNoStop(text)) {
-    query_words.insert(word);
-    }
-    temp = SplitOnPlusMinus(query_words);
-    return temp;
+    for (const string& word : SplitIntoWordsNoStop(text))
+        {
+            query_words.insert(word);
+        }
+    Query q;
+    q = SplitOnPlusMinus(query_words);
+    return q;
 }
 
-//--------------------------------------------------------------------------------------------------------------
 vector<string> SplitIntoWordsNoStop(const string& text) const {
     vector<string> words;
     for (const string& word : SplitIntoWords(text)) {
@@ -138,11 +134,11 @@ vector<string> SplitIntoWordsNoStop(const string& text) const {
     }
     return words;
 }
-//-------------------------------------------------------------------------------------------------------------
+
 double GetWordIDF (const string& word) const {
     return log(static_cast<double> (document_count_) / word_to_document_freqs_.at(word).size());
 }
-//-------------------------------------------------------------------------------------------------------------
+
  map<int, double> CheckPlusMinusWords (const Query query_words) const {
      map<int, double> document_to_relevance;
          for (const string& word : query_words.plus_words_) {
@@ -168,24 +164,20 @@ double GetWordIDF (const string& word) const {
 
     return document_to_relevance;
 }
-//--------------------------------------------------------------------------------------------------------------
-vector<Document> FindAllDocuments(const Query query_words) const {
-    map<int, double> document_to_relevance;
-    document_to_relevance = CheckPlusMinusWords(query_words);
 
+vector<Document> FindAllDocuments(const Query query_words) const {
+    map<int, double> document_to_relevance= CheckPlusMinusWords(query_words);
     vector<Document> matched_documents;
     for (const auto& [id,rel] : document_to_relevance) {
-      Document temp;
-      temp.id = id;
-      temp.relevance = rel;
-      matched_documents.push_back(temp);
+      Document q;
+      q.id = id;
+      q.relevance = rel;
+      matched_documents.push_back(q);
     }
     return matched_documents;
 }
 
 };
-
-//-----------------------------------------------------------------------------
 
 SearchServer CreateSearchServer() {
     SearchServer search_server;
@@ -196,7 +188,6 @@ SearchServer CreateSearchServer() {
     }
     return search_server;
 }
-//------------------------------------------------------------------------------
 
 int main() {
 
