@@ -116,7 +116,7 @@ public:
         {
             if(!word.empty() && IsValidWord(word)) {
                 stop_words_.insert(word);
-            } else throw invalid_argument("Incorrect symbols"s);
+            } else throw invalid_argument("Incorrect symbols at stop word : "s + word);
         }
     }
 
@@ -145,8 +145,12 @@ public:
     }
 
      void AddDocument(int document_id, const string& document, DocumentStatus status, const vector<int>& ratings) {
-        if (document_id <0 || id_to_all_parameters_.count(document_id) != 0) {
-                throw invalid_argument("ID less than zero or dublicate exist"s); }
+        if ( document_id <0 ) {
+                throw invalid_argument("ID less than zero"s);
+        }
+        if ( id_to_all_parameters_.count(document_id) != 0 ) {
+             throw invalid_argument("ID of document already exists"s);
+        }
 
         const vector<string> words = SplitIntoWordsNoStop(document);
 
@@ -170,10 +174,7 @@ public:
     }
 
    tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query, int document_id) const {
-        for (const auto& word : SplitIntoWords(raw_query)) {
-            if (!ChekDoubleMinus(word)) {throw invalid_argument("Query include word with (--) or have no word after (-) "s);}
-            if (!IsValidWord(word)) {throw invalid_argument("Incorrect symbols in document"s);}
-        }
+
         vector<string> tuple_pl_words;
         Query q = ParseQuery(raw_query);
         for(const auto& mw : q.minus_words_)
@@ -204,10 +205,7 @@ public:
 
     template <typename DocumentPredicate>
    vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
-        for (const auto& word : SplitIntoWords(raw_query)) {
-            if (!ChekDoubleMinus(word)) {throw invalid_argument("Query include word with (--) or have no word after (-) "s);}
-            if (!IsValidWord(word)) {throw invalid_argument("Incorrect symbols in document"s);}
-        }
+
         const Query query_words = ParseQuery(raw_query);
         auto result = FindAllDocuments(query_words,document_predicate);
         const double EPSILON = 1e-6;
@@ -284,6 +282,8 @@ private:
         set<string> query_words;
         for (const string& word : SplitIntoWordsNoStop(text))
         {
+            if (!ChekDoubleMinus(word)) {throw invalid_argument("Query include word with (--) or have no word after (-) "s);}
+            if (!IsValidWord(word)) {throw invalid_argument("Incorrect symbols in document"s);}
             query_words.insert(word);
         }
         Query q;
