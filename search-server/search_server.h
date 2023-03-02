@@ -15,21 +15,17 @@ class SearchServer {
 public:
     
     template <typename ContainerCollection>
-    explicit SearchServer(const ContainerCollection& stop_words)
-        {
-            for (const auto& word : stop_words)
-            {
-                if(!word.empty() && IsValidWord(word)) {
-                    stop_words_.insert(word);
-                } else throw std::invalid_argument("Incorrect symbols at stop word : " + word);
-            }
-        }
+    explicit SearchServer(const ContainerCollection& stop_words);
     
     explicit SearchServer(const std::string& stop_words);
     
     int GetDocumentCount() const;
     
     int GetDocumentId(int index) const;
+    
+    bool ChekDoubleMinus(const std::string & word) const;
+
+    bool IsValidWord(const std::string& word) const;
     
     void AddDocument(int document_id, const std::string& document, DocumentStatus status, const std::vector<int>& ratings);
     
@@ -41,22 +37,7 @@ public:
     std::vector<Document> FindTopDocuments(const std::string& raw_query) const;
 
 template <typename DocumentPredicate>
-std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentPredicate document_predicate) const {
-
-        const Query query_words = ParseQuery(raw_query);
-        auto result = FindAllDocuments(query_words,document_predicate);
-        const double EPSILON = 1e-6;
-        sort(result.begin(), result.end(),[&EPSILON](const Document& lhs, const Document& rhs) {
-            if (std::abs(lhs.relevance - rhs.relevance)< EPSILON) {
-                return lhs.rating > rhs.rating;
-            } else {
-                return lhs.relevance > rhs.relevance;
-            } });
-            if (result.size() > MAX_RESULT_DOCUMENT_COUNT) {
-                result.resize(MAX_RESULT_DOCUMENT_COUNT);
-            }
-            return result;
-    }
+std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentPredicate document_predicate) const;
 
 std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentStatus status) const;
     
@@ -85,7 +66,46 @@ std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentSta
     std::map<int, double> CheckPlusMinusWords (const Query query_words) const;
     
     template <typename Predicate>
-    std::vector<Document> FindAllDocuments(const Query query_words, Predicate predicate) const
+    std::vector<Document> FindAllDocuments(const Query query_words, Predicate predicate) const;
+ 
+    std::vector<std::string> SplitIntoWordsNoStop(const std::string& text) const;
+    
+    double GetWordIDF (const std::string& word) const ;
+    
+};
+
+
+ template <typename ContainerCollection>
+ SearchServer::SearchServer(const ContainerCollection& stop_words)
+        {
+            for (const auto& word : stop_words)
+            {
+                if(!word.empty() && IsValidWord(word)) {
+                    stop_words_.insert(word);
+                } else throw std::invalid_argument("Incorrect symbols at stop word : " + word);
+            }
+        }
+
+template <typename DocumentPredicate>
+std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_query, DocumentPredicate document_predicate) const {
+
+        const Query query_words = ParseQuery(raw_query);
+        auto result = FindAllDocuments(query_words,document_predicate);
+        const double EPSILON = 1e-6;
+        sort(result.begin(), result.end(),[&EPSILON](const Document& lhs, const Document& rhs) {
+            if (std::abs(lhs.relevance - rhs.relevance)< EPSILON) {
+                return lhs.rating > rhs.rating;
+            } else {
+                return lhs.relevance > rhs.relevance;
+            } });
+            if (result.size() > MAX_RESULT_DOCUMENT_COUNT) {
+                result.resize(MAX_RESULT_DOCUMENT_COUNT);
+            }
+            return result;
+    }
+    
+template <typename Predicate>
+    std::vector<Document> SearchServer::FindAllDocuments(const Query query_words, Predicate predicate) const
     {
         std::map<int, double> document_to_relevance = CheckPlusMinusWords(query_words);
         std::vector<Document> matched_documents;
@@ -110,10 +130,3 @@ std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentSta
 
         return match_doc;
     }
-
-    
-    std::vector<std::string> SplitIntoWordsNoStop(const std::string& text) const;
-    
-    double GetWordIDF (const std::string& word) const ;
-    
-};

@@ -57,14 +57,6 @@ private:
 };
 
 
-
-std::ostream& operator<<(std::ostream& out, const Document& doc) {
-    out << "{ document_id = " << doc.id << ",";
-    out << " relevance = " << doc.relevance << ",";
-    out << " rating = " << doc.rating << " }";
-    return out;
-}
-
 template <typename It>
 std::ostream& operator<<(std::ostream& out, const IteratorRange<It>& c) {
    for (auto it = c.first_; it != c.last_; ++ it) {

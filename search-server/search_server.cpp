@@ -190,3 +190,21 @@ std::vector<std::string> SearchServer::SplitIntoWordsNoStop(const std::string& t
     {
         return log(static_cast<double> (document_count_) / word_to_document_freqs_.at(word).size());
     }
+
+bool SearchServer::IsValidWord(const std::string& word) const
+    {
+        return std::none_of(word.begin(), word.end(), [](char c)
+        {
+            return c >= '\0' && c < ' ';
+        });
+    }
+
+
+
+bool SearchServer::ChekDoubleMinus(const std::string & word) const {
+    if ((word[0] == '-' && word[1] == '-') ||(word == "-"))
+    {
+        return false;
+    }
+    else return true;
+}
