@@ -8,40 +8,50 @@
 #include <stdexcept>
 
 
+
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
 class SearchServer {
-    
+
 public:
-    
+
     template <typename ContainerCollection>
     explicit SearchServer(const ContainerCollection& stop_words);
-    
+
     explicit SearchServer(const std::string& stop_words);
-    
+
     int GetDocumentCount() const;
     
-    int GetDocumentId(int index) const;
+    std::map<int,std::set<std::string>>& GetIdToWords();
     
+     const std::set<int>::iterator begin();
+
+     const std::set<int>::iterator end();
+        
+    const std::map<std::string, double>& GetWordFrequencies(int document_id) const;
+    
+    void RemoveDocument(int document_id);
+    
+
     bool ChekDoubleMinus(const std::string & word) const;
 
     bool IsValidWord(const std::string& word) const;
-    
+
     void AddDocument(int document_id, const std::string& document, DocumentStatus status, const std::vector<int>& ratings);
-    
+
     int ComputeAverageRating(const std::vector<int>& ratings);
-    
+
     std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, int document_id) const;
-    
-   
+
+
     std::vector<Document> FindTopDocuments(const std::string& raw_query) const;
 
 template <typename DocumentPredicate>
 std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentPredicate document_predicate) const;
 
 std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentStatus status) const;
-    
-    
+
+
     private:
 
 
@@ -52,26 +62,29 @@ std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentSta
     };
 
     Query ParseQuery(const std::string& text) const;
-    
+
     Query SplitOnPlusMinus (const std::set<std::string>& query_words) const;
-    
-    
+
+
     std::map <int, Document> id_to_all_parameters_;
     std::map<std::string, std::map<int, double>> word_to_document_freqs_;
     std::set <std::string> stop_words_;
-    std::map<int, int> doc_position_;
+    std::set<int> all_docs_ids_;
+    std::map<int, std::map<std::string, double>> word_freq_;
+    std::map<int,std::set<std::string>> id_doc_words_;
+    
 
     int document_count_ = 0;
-    
+
     std::map<int, double> CheckPlusMinusWords (const Query query_words) const;
-    
+
     template <typename Predicate>
     std::vector<Document> FindAllDocuments(const Query query_words, Predicate predicate) const;
- 
+
     std::vector<std::string> SplitIntoWordsNoStop(const std::string& text) const;
-    
+
     double GetWordIDF (const std::string& word) const ;
-    
+
 };
 
 
@@ -103,7 +116,7 @@ std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_quer
             }
             return result;
     }
-    
+
 template <typename Predicate>
     std::vector<Document> SearchServer::FindAllDocuments(const Query query_words, Predicate predicate) const
     {
@@ -130,3 +143,5 @@ template <typename Predicate>
 
         return match_doc;
     }
+
+

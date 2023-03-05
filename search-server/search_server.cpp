@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include "string_processing.h"
 #include "search_server.h"
+#include <set>
 
 SearchServer::SearchServer(const std::string& stop_words) : SearchServer::SearchServer(SplitIntoWords(stop_words))
     {
@@ -16,23 +17,12 @@ int SearchServer::GetDocumentCount() const
     }
 
 
- int SearchServer::GetDocumentId(int index) const
-    {
-        if (index < 0 || index > SearchServer::document_count_)
-        {
-            throw std::out_of_range("Document position is out of range");
-        }
-        else
-        {
-            return SearchServer::doc_position_.at(index);
-        }
-    }
 
  void SearchServer::AddDocument(int document_id, const std::string& document, DocumentStatus status, const std::vector<int>& ratings) {
         if ( document_id <0 ) {
                 throw std::invalid_argument("ID less than zero");
         }
-        if ( SearchServer::id_to_all_parameters_.count(document_id) != 0 ) {
+        if (id_to_all_parameters_.count(document_id) != 0 ) {
              throw std::invalid_argument("ID of document already exists");
         }
 
@@ -41,21 +31,57 @@ int SearchServer::GetDocumentCount() const
         for (const auto& w : words) {
             if (!IsValidWord(w)) { throw std::invalid_argument("Text of document include incorrect symbols");}
         }
-        SearchServer::doc_position_.insert({SearchServer::document_count_,document_id});
+        all_docs_ids_.insert(document_id);
         ++SearchServer::document_count_;
         Document q;
         q.id = document_id;
         q.status = status;
         q.rating = ComputeAverageRating(ratings);
 
-        SearchServer::id_to_all_parameters_.insert({document_id, q});
+        id_to_all_parameters_.insert({document_id, q});
 
         double tf_single = 1.0 / words.size();
+        std::set<std::string> w;
+     
         for (const std::string& word : words)
         {
-            SearchServer::word_to_document_freqs_[word][document_id] += tf_single;
+            word_to_document_freqs_[word][document_id] += tf_single;
+            word_freq_[document_id][word]+= tf_single;
+            w.insert(word);
         }
+         id_doc_words_[document_id] = w;
     }
+
+      const std::set<int>::iterator SearchServer::begin() {
+        return all_docs_ids_.begin();
+    }
+
+     const std::set<int>::iterator SearchServer::end() {
+        return all_docs_ids_.end();
+    }
+        
+std::map<int,std::set<std::string>>& SearchServer::GetIdToWords() {
+        return id_doc_words_;
+    }
+
+ const std::map<std::string, double>& SearchServer::GetWordFrequencies(int document_id) const {
+     return SearchServer::word_freq_.at(document_id);
+ }
+
+ void SearchServer::RemoveDocument(int document_id) {
+  id_to_all_parameters_.erase(document_id);
+  id_doc_words_.erase(document_id);
+  for (auto it = word_to_document_freqs_.begin(); it != word_to_document_freqs_.end(); ++it) {
+        if (it->second.count(document_id) > 0) {
+            it->second.erase(document_id);
+        }
+    } 
+ 
+  all_docs_ids_.erase(document_id);  
+  word_freq_.erase(document_id);
+  --document_count_;
+ }
+
 
 
 int SearchServer::ComputeAverageRating(const std::vector<int>& ratings)
@@ -208,3 +234,4 @@ bool SearchServer::ChekDoubleMinus(const std::string & word) const {
     }
     else return true;
 }
+

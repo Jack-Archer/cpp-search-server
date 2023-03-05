@@ -1,4 +1,6 @@
 #pragma once
+#include <ostream>
+#include <iostream>
 
 enum class DocumentStatus
 {
@@ -15,9 +17,12 @@ struct Document
     Document () = default;
 
     Document (int id_doc, double rel, int rate, DocumentStatus stat = DocumentStatus::NULL_STATUS);
-    
+
     int id = 0;
     double relevance = 0.0;
     int rating = 0;
     DocumentStatus status = DocumentStatus::NULL_STATUS;
 };
+
+
+std::ostream& operator<<(std::ostream& out, const Document& doc);
