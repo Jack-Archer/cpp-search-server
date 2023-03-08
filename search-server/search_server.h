@@ -21,17 +21,17 @@ public:
     explicit SearchServer(const std::string& stop_words);
 
     int GetDocumentCount() const;
-    
+
     std::map<int,std::set<std::string>>& GetIdToWords();
-    
+
      const std::set<int>::iterator begin();
 
      const std::set<int>::iterator end();
-        
+
     const std::map<std::string, double>& GetWordFrequencies(int document_id) const;
-    
+
     void RemoveDocument(int document_id);
-    
+
 
     bool ChekDoubleMinus(const std::string & word) const;
 
@@ -72,7 +72,7 @@ std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentSta
     std::set<int> all_docs_ids_;
     std::map<int, std::map<std::string, double>> word_freq_;
     std::map<int,std::set<std::string>> id_doc_words_;
-    
+
 
     int document_count_ = 0;
 
@@ -88,41 +88,40 @@ std::vector<Document> FindTopDocuments(const std::string& raw_query, DocumentSta
 };
 
 
- template <typename ContainerCollection>
- SearchServer::SearchServer(const ContainerCollection& stop_words)
+template <typename ContainerCollection>
+SearchServer::SearchServer(const ContainerCollection& stop_words){
+        for (const auto& word : stop_words)
         {
-            for (const auto& word : stop_words)
-            {
-                if(!word.empty() && IsValidWord(word)) {
-                    stop_words_.insert(word);
-                } else throw std::invalid_argument("Incorrect symbols at stop word : " + word);
-            }
+            if(!word.empty() && IsValidWord(word)) {
+                stop_words_.insert(word);
+            } else throw std::invalid_argument("Incorrect symbols at stop word : " + word);
         }
+}
 
 template <typename DocumentPredicate>
 std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_query, DocumentPredicate document_predicate) const {
 
-        const Query query_words = ParseQuery(raw_query);
-        auto result = FindAllDocuments(query_words,document_predicate);
-        const double EPSILON = 1e-6;
-        sort(result.begin(), result.end(),[&EPSILON](const Document& lhs, const Document& rhs) {
-            if (std::abs(lhs.relevance - rhs.relevance)< EPSILON) {
-                return lhs.rating > rhs.rating;
-            } else {
-                return lhs.relevance > rhs.relevance;
-            } });
-            if (result.size() > MAX_RESULT_DOCUMENT_COUNT) {
-                result.resize(MAX_RESULT_DOCUMENT_COUNT);
-            }
-            return result;
-    }
+    const Query query_words = ParseQuery(raw_query);
+    auto result = FindAllDocuments(query_words,document_predicate);
+    const double EPSILON = 1e-6;
+    sort(result.begin(), result.end(),[&EPSILON](const Document& lhs, const Document& rhs) {
+        if (std::abs(lhs.relevance - rhs.relevance)< EPSILON) {
+            return lhs.rating > rhs.rating;
+        } else {
+            return lhs.relevance > rhs.relevance;
+        } });
+        if (result.size() > MAX_RESULT_DOCUMENT_COUNT) {
+            result.resize(MAX_RESULT_DOCUMENT_COUNT);
+        }
+        return result;
+}
 
 template <typename Predicate>
-    std::vector<Document> SearchServer::FindAllDocuments(const Query query_words, Predicate predicate) const
-    {
-        std::map<int, double> document_to_relevance = CheckPlusMinusWords(query_words);
-        std::vector<Document> matched_documents;
-        for (const auto& [id,rel] : document_to_relevance)
+std::vector<Document> SearchServer::FindAllDocuments(const Query query_words, Predicate predicate) const
+{
+    std::map<int, double> document_to_relevance = CheckPlusMinusWords(query_words);
+    std::vector<Document> matched_documents;
+    for (const auto& [id,rel] : document_to_relevance)
         {
             Document q;
             q.id = id;
@@ -131,17 +130,17 @@ template <typename Predicate>
             q.relevance = rel;
             matched_documents.push_back(q);
         }
-        std::vector<Document>match_doc;
-        for (const Document& doc : matched_documents)
+    std::vector<Document>match_doc;
+    for (const Document& doc : matched_documents)
+    {
+        if (predicate(doc.id,doc.status,doc.rating))
         {
-            if (predicate(doc.id,doc.status,doc.rating))
-            {
-                match_doc.push_back(doc);
-            }
-            else continue;
+            match_doc.push_back(doc);
         }
-
-        return match_doc;
+        else continue;
     }
+
+    return match_doc;
+}
 
 
